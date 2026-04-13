@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shopline 批次浮水印工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f5f4f0;--surface:#fff;--s2:#fafaf8;--border:#e8e6e0;--b2:#d4d0c8;
+  --text:#1a1916;--t2:#6b6860;--t3:#9b9890;
+  --accent:#2563eb;--a2:#dbeafe;--a3:#1d4ed8;
+  --red:#dc2626;--r2:#fee2e2;
+  --radius:12px;--r2px:8px;--r3:20px;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.bi{width:36px;height:36px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.bi svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;}
+.bn{font-size:15px;font-weight:600;}.bs{font-size:11px;color:var(--t3);}
+.tabs{display:flex;gap:2px;background:#f0efe9;padding:3px;border-radius:var(--r3);}
+.tab{padding:7px 16px;font-size:13px;font-weight:500;border:none;background:transparent;border-radius:20px;cursor:pointer;color:var(--t2);font-family:'DM Sans',sans-serif;transition:all .18s;}
+.tab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.lay{display:grid;grid-template-columns:300px 1fr;gap:16px;padding:16px;max-width:1200px;margin:0 auto;align-items:start;}
+.left{position:sticky;top:62px;max-height:calc(100vh - 78px);overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:2px;}
+.left::-webkit-scrollbar{width:4px;}
+.left::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px;}
+.right{display:flex;flex-direction:column;gap:12px;}
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px;box-shadow:var(--sh);}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.ct{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;}
+.ci{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.ci-b{background:#dbeafe;}.ci-p{background:#ede9fe;}.ci-g{background:#dcfce7;}.ci-a{background:#fef3c7;}
+.dz{border:2px dashed var(--b2);border-radius:var(--r2px);padding:14px;text-align:center;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--s2);}
+.dz:hover,.dz.drag{border-color:var(--accent);background:var(--a2);}
+.dz svg{width:22px;height:22px;stroke:var(--t3);stroke-width:1.5;fill:none;}
+.dz:hover svg,.dz.drag svg{stroke:var(--accent);}
+.dz-t{font-size:13px;color:var(--t2);}.dz-s{font-size:11px;color:var(--t3);}
+.logo-img{max-height:52px;object-fit:contain;border-radius:6px;}
+.sg{display:flex;flex-direction:column;gap:10px;}
+.sr{display:flex;flex-direction:column;gap:3px;}
+.sl{font-size:12px;color:var(--t2);display:flex;justify-content:space-between;align-items:center;}
+.sl b{color:var(--accent);font-weight:600;font-family:'DM Mono',monospace;}
+input[type=range]{width:100%;height:4px;accent-color:var(--accent);cursor:pointer;}
+.px-row{display:flex;align-items:center;gap:6px;}
+.px-row input[type=range]{flex:1;}
+.px-step{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0;}
+.px-step button{width:24px;height:24px;border:none;background:var(--s2);cursor:pointer;font-size:14px;color:var(--t2);display:flex;align-items:center;justify-content:center;transition:background .12s;font-family:'DM Mono',monospace;line-height:1;}
+.px-step button:hover{background:var(--a2);color:var(--accent);}
+.px-step span{min-width:40px;text-align:center;font-size:12px;font-family:'DM Mono',monospace;font-weight:600;color:var(--accent);background:var(--surface);display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border);border-right:1px solid var(--border);}
+.fscroll{max-height:220px;overflow-y:auto;margin-top:10px;}
+.fr{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;border:1px solid transparent;font-size:12px;color:var(--t2);background:var(--s2);transition:background .12s,border-color .12s;margin-bottom:2px;border-radius:var(--r2px);}
+.fr:hover{background:#f0f0eb;border-color:var(--border);}
+.fr.on{background:var(--accent);color:#fff;border-color:var(--accent);border-radius:var(--r2px) var(--r2px) 0 0;margin-bottom:0;}
+.fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fno{font-size:11px;font-family:'DM Mono',monospace;color:var(--t3);flex-shrink:0;}
+.fr.on .fno{color:rgba(255,255,255,.5);}
+.fa{display:flex;gap:2px;flex-shrink:0;}
+.ia{padding:3px;border:none;background:none;cursor:pointer;border-radius:4px;color:var(--t3);line-height:1;display:flex;align-items:center;transition:all .1s;}
+.ia:hover{color:var(--text);background:rgba(0,0,0,.07);}
+.ia.w{color:rgba(255,255,255,.5);}.ia.w:hover{color:#fff;background:rgba(255,255,255,.15);}
+.ia.del:hover{color:var(--red);background:var(--r2);}
+.ia:disabled{opacity:.25;cursor:default;}
+.pp{background:#eef3ff;border:1px solid #c7d5f5;border-top:none;border-radius:0 0 var(--r2px) var(--r2px);padding:12px;margin-bottom:4px;}
+.pp-cb{display:flex;align-items:center;gap:8px;font-size:12px;color:#3b52a0;margin-bottom:10px;}
+.pp-cb input{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;}
+.pp-sep{height:1px;background:#c7d5f5;margin:0 0 10px;}
+.pp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pp .sl{color:#3b52a0;}.pp .sl b{color:var(--a3);}
+.clr{font-size:11px;color:var(--t3);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:'DM Sans',sans-serif;padding:2px 4px;border-radius:4px;}
+.clr:hover{color:var(--red);background:var(--r2);}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
+.pb{padding:8px 4px;border-radius:var(--r2px);border:1px solid var(--border);background:var(--s2);cursor:pointer;text-align:center;font-family:'DM Sans',sans-serif;transition:all .18s;}
+.pb:hover{border-color:var(--accent);background:var(--a2);}
+.pb.on{background:var(--accent);border-color:var(--accent);}
+.pb .pl{font-size:12px;font-weight:600;color:var(--text);}
+.pb .pd{font-size:10px;color:var(--t3);margin-top:2px;}
+.pb.on .pl,.pb.on .pd{color:#fff;}
+.pb.on .pd{color:rgba(255,255,255,.7);}
+.pv{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:var(--sh);}
+.pvh{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);}
+.pvt{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.badge{font-size:11px;padding:3px 8px;border-radius:var(--r3);font-weight:500;}
+.bg{background:#f0efe9;color:var(--t2);}.bb{background:var(--a2);color:var(--a3);}
+.hbtns{display:flex;gap:6px;align-items:center;}
+.nb{width:30px;height:30px;border:1px solid var(--border);border-radius:var(--r2px);background:var(--s2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:all .12s;}
+.nb:hover{border-color:var(--accent);color:var(--accent);}
+.nb:disabled{opacity:.25;cursor:default;}
+.plbtn{display:flex;align-items:center;gap:5px;padding:5px 12px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:var(--r2px);background:var(--s2);cursor:pointer;color:var(--t2);font-family:'DM Sans',sans-serif;}
+.plbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--a2);}
+.pvb{display:flex;align-items:center;justify-content:center;min-height:400px;padding:24px;background-image:radial-gradient(circle,#ddd 1px,transparent 1px);background-size:18px 18px;background-color:#f8f7f4;}
+.pvb img{max-height:500px;max-width:100%;object-fit:contain;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.15);}
+.empty{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 0;}
+.illus{position:relative;width:120px;height:120px;margin-bottom:4px;}
+.ic{position:absolute;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.ib{width:90px;height:90px;background:#dbeafe;border:2px solid #93c5fd;top:0;left:30px;transform:rotate(-8deg);}
+.im{width:90px;height:90px;background:#ede9fe;border:2px solid #c4b5fd;top:6px;left:16px;transform:rotate(-2deg);}
+.if_{width:90px;height:90px;background:#fff;border:2px solid #e8e6e0;top:14px;left:4px;box-shadow:0 4px 16px rgba(0,0,0,.1);}
+.if_ svg{width:36px;height:36px;stroke:#9b9890;stroke-width:1.2;fill:none;}
+.ibadge{position:absolute;bottom:-2px;right:-2px;width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid var(--bg);}
+.ibadge svg{width:14px;height:14px;stroke:#fff;stroke-width:2.5;fill:none;}
+.pvf{padding:8px 16px;background:var(--s2);border-top:1px solid var(--border);font-size:12px;color:var(--t3);display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.pvf b{color:var(--t2);font-weight:500;}
+.dlcard{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:14px;box-shadow:var(--sh);}
+.dlbtn{width:100%;padding:13px;border-radius:var(--r2px);border:none;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:#fff;font-family:'DM Sans',sans-serif;transition:all .18s;}
+.dlbtn:hover:not(:disabled){background:var(--a3);transform:translateY(-1px);}
+.dlbtn:disabled{background:#e5e3dc;color:var(--t3);cursor:not-allowed;}
+.dlbtn.busy{background:#93c5fd;cursor:wait;transform:none;}
+.prog{margin-top:10px;display:none;}
+.pbar{height:4px;background:#e8e6e0;border-radius:4px;overflow:hidden;}
+.pfill{height:100%;background:var(--accent);border-radius:4px;transition:width .3s;}
+.ptxt{font-size:11px;color:var(--t3);margin-top:5px;text-align:center;font-family:'DM Mono',monospace;}
+.hint{font-size:11px;color:var(--t3);background:var(--s2);border-radius:6px;padding:6px 8px;line-height:1.5;margin-top:10px;}
+.cbrow{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t2);cursor:pointer;}
+.cbrow input{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;}
+.gap-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="bi"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+    <div><div class="bn">Shopline 批次浮水印</div><div class="bs">自動 800px · 白底正方形 · JPG 100%</div></div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="switchMode('batch')">批次下載</button>
+    <button class="tab" onclick="switchMode('grid')">網格拼貼</button>
+    <button class="tab" onclick="switchMode('gif')">GIF 動畫</button>
+  </div>
+</div>
+
+<div class="lay">
+  <div class="left">
+
+    <div class="card">
+      <div class="ch"><div class="ct"><div class="ci ci-b"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>浮水印 Logo</div></div>
+      <div class="dz" id="ldz">
+        <div id="lph"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><div class="dz-t">拖曳或點擊上傳 Logo</div><div class="dz-s">建議使用透明背景 PNG</div></div>
+        <img id="limg" class="logo-img" style="display:none">
+        <div id="lchg" style="display:none;font-size:11px;color:var(--t3);">點擊或拖曳更換</div>
+        <input type="file" id="linp" accept="image/*" style="display:none">
+      </div>
+      <div class="sg" style="margin-top:14px;">
+        <div class="sr"><div class="sl">大小<b id="lsc">45%</b></div><input type="range" min="10" max="80" value="45" oninput="S.logoScale=this.value/100;I('lsc').textContent=this.value+'%';regen()"></div>
+        <div class="sr"><div class="sl">透明度<b id="lop">20%</b></div><input type="range" min="5" max="100" value="20" oninput="S.logoOpacity=this.value/100;I('lop').textContent=this.value+'%';regen()"></div>
+        <div class="sr"><div class="sl">邊距<b id="lpad">1%</b></div><input type="range" min="0" max="10" value="1" oninput="S.logoPadding=this.value/100;I('lpad').textContent=this.value+'%';regen()"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch">
+        <div class="ct"><div class="ci ci-p"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="2"/><path d="M22 15L16 9 8 17"/></svg></div>目標圖片<span id="icnt" style="font-size:11px;font-weight:400;color:var(--t3);margin-left:4px;"></span></div>
+        <button class="clr" id="clrbtn" style="display:none" onclick="clearAll()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>清除全部</button>
+      </div>
+      <div class="dz" id="idz">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div class="dz-t">拖曳多張圖片或點擊選擇</div>
+        <div class="dz-s" id="ihint">點擊圖片名稱展開個別調整</div>
+        <input type="file" id="iinp" accept="image/*" multiple style="display:none">
+      </div>
+      <div class="fscroll" id="fscroll"></div>
+    </div>
+
+    <div class="card" id="gpanel" style="display:none">
+      <div class="ch"><div class="ct"><div class="ci ci-g"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>網格設定</div></div>
+      <div style="font-size:11px;color:var(--t3);font-weight:500;margin-bottom:8px;text-transform:uppercase;letter-spacing:.03em;">快速版型</div>
+      <div class="pg" id="pgrid"></div>
+      <div id="ccols" style="display:none;margin-bottom:10px;"><div class="sr"><div class="sl">欄數<b id="lcols">自動</b></div><input type="range" min="0" max="8" step="1" value="0" oninput="S.gridCols=parseInt(this.value);I('lcols').textContent=this.value=='0'?'自動':this.value;regen()"></div></div>
+      <div class="sg">
+        <div class="sr">
+          <div class="sl">外圍邊距<b id="louterv">0px</b></div>
+          <div class="px-row">
+            <input type="range" id="routerR" min="0" max="80" step="1" value="0" oninput="setOuter(+this.value)">
+            <div class="px-step">
+              <button onclick="setOuter(S.gridPad-1)">−</button>
+              <span id="louterS">0</span>
+              <button onclick="setOuter(S.gridPad+1)">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="gap-row">
+          <div class="sr">
+            <div class="sl">左右間距<b id="lgxv">0px</b></div>
+            <div class="px-row">
+              <input type="range" id="rgxR" min="-40" max="80" step="1" value="0" oninput="setGapX(+this.value)">
+              <div class="px-step">
+                <button onclick="setGapX(S.gapX-1)">−</button>
+                <span id="lgxS">0</span>
+                <button onclick="setGapX(S.gapX+1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="sr">
+            <div class="sl">上下間距<b id="lgyv">0px</b></div>
+            <div class="px-row">
+              <input type="range" id="rgyR" min="-40" max="80" step="1" value="0" oninput="setGapY(+this.value)">
+              <div class="px-step">
+                <button onclick="setGapY(S.gapY-1)">−</button>
+                <span id="lgyS">0</span>
+                <button onclick="setGapY(S.gapY+1)">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <label class="cbrow"><input type="checkbox" checked onchange="S.overlap=this.checked;regen()">允許邊緣壓疊（去背PNG透明融合）</label>
+      </div>
+      <div class="hint">間距 0px + 外圍邊距 0px → 完全無縫貼齊<br>間距負值 → 圖片互相壓疊</div>
+    </div>
+
+    <div class="card" id="gifpanel" style="display:none">
+      <div class="ch"><div class="ct"><div class="ci ci-a"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>GIF 設定</div></div>
+      <div class="sr"><div class="sl">每格停留<b id="lgif">0.50秒</b></div><input type="range" min="0.05" max="5" step="0.05" value="0.5" oninput="S.gifInterval=parseFloat(this.value);I('lgif').textContent=parseFloat(this.value).toFixed(2)+'秒';"></div>
+    </div>
+
+  </div>
+
+  <div class="right">
+    <div class="pv">
+      <div class="pvh">
+        <div class="pvt">效果預覽<span class="badge bg" id="pcnt" style="display:none"></span><span class="badge bb" id="pbadge" style="display:none"></span></div>
+        <div class="hbtns">
+          <button class="plbtn" id="plbtn" style="display:none" onclick="togglePlay()">
+            <svg id="plicon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+            <span id="pllbl">播放</span>
+          </button>
+          <div id="navbtns" style="display:none;gap:4px;">
+            <button class="nb" id="pbtn" onclick="nav(-1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <button class="nb" id="nbtn" onclick="nav(1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="pvb" id="pvb">
+        <div class="empty">
+          <div class="illus"><div class="ic ib"></div><div class="ic im"></div><div class="ic if_"><svg viewBox="0 0 24 24" fill="none" stroke="#9b9890" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="ibadge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+          <div style="font-size:15px;font-weight:500;color:var(--t2);">上傳圖片開始處理</div>
+          <div style="font-size:12px;color:var(--t3);">支援 JPG、PNG、GIF，拖曳即可上傳</div>
+        </div>
+      </div>
+      <div class="pvf" id="pvf" style="display:none"><span>輸出：<b>JPG 100%</b></span><span>檔名：<b id="fname"></b></span></div>
+    </div>
+    <div class="dlcard">
+      <button class="dlbtn" id="dlbtn" disabled onclick="handleDl()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span id="dllbl">請先上傳圖片</span>
+      </button>
+      <div class="prog" id="prog"><div class="pbar"><div class="pfill" id="pfill" style="width:0%"></div></div><div class="ptxt" id="ptxt"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const I=id=>document.getElementById(id);
+const PRESETS=[
+  {id:'lr2',label:'左右 2',desc:'左右並排',cols:2,rows:1,cells:[[0,0,1,1],[1,0,1,1]]},
+  {id:'tb2',label:'上下 2',desc:'上下並排',cols:1,rows:2,cells:[[0,0,1,1],[0,1,1,1]]},
+  {id:'2x2',label:'2 × 2',desc:'上2下2',cols:2,rows:2,cells:[[0,0,1,1],[1,0,1,1],[0,1,1,1],[1,1,1,1]]},
+  {id:'3x2',label:'3 × 2',desc:'上3下3',cols:3,rows:2,cells:[[0,0,1,1],[1,0,1,1],[2,0,1,1],[0,1,1,1],[1,1,1,1],[2,1,1,1]]},
+  {id:'3t2b',label:'上3下2',desc:'上3下2置中',cols:6,rows:2,cells:[[0,0,2,1],[2,0,2,1],[4,0,2,1],[1,1,2,1],[3,1,2,1]]},
+  {id:'custom',label:'自訂',desc:'手動欄數',cols:0,rows:0,cells:null},
+];
+let mode='batch',logo=null,items=[],openIdx=-1,playing=false,playTimer=null;
+const S={logoScale:.45,logoPadding:.01,logoOpacity:.2,maxSize:800,
+  gridPreset:'lr2',gridCols:0,gapX:0,gapY:0,gridPad:0,overlap:true,gifInterval:.5};
+
+function setOuter(v){v=Math.max(0,Math.min(80,v));S.gridPad=v;I('routerR').value=v;I('louterv').textContent=v+'px';I('louterS').textContent=v;regen();}
+function setGapX(v){v=Math.max(-40,Math.min(80,v));S.gapX=v;I('rgxR').value=v;I('lgxv').textContent=v+'px';I('lgxS').textContent=v;regen();}
+function setGapY(v){v=Math.max(-40,Math.min(80,v));S.gapY=v;I('rgyR').value=v;I('lgyv').textContent=v+'px';I('lgyS').textContent=v;regen();}
+
+PRESETS.forEach(p=>{
+  const b=document.createElement('button');b.className='pb'+(p.id==='lr2'?' on':'');b.id='pb-'+p.id;
+  b.innerHTML=`<div class="pl">${p.label}</div><div class="pd">${p.desc}</div>`;
+  b.onclick=()=>{
+    S.gridPreset=p.id;document.querySelectorAll('.pb').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    I('ccols').style.display=p.id==='custom'?'block':'none';
+    const pb=I('pbadge');if(p.id!=='custom'){pb.textContent=p.desc;pb.style.display='inline-flex';}else pb.style.display='none';
+    regen();
+  };I('pgrid').appendChild(b);
+});
+
+function switchMode(m){
+  mode=m;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',['batch','grid','gif'][i]===m));
+  I('gpanel').style.display=m==='grid'?'block':'none';I('gifpanel').style.display=m==='gif'?'block':'none';
+  if(m!=='gif')stopPlay();renderList();regen();updateDl();
+}
+
+const ldz=I('ldz'),linp=I('linp');
+ldz.addEventListener('click',()=>linp.click());
+ldz.addEventListener('dragover',e=>{e.preventDefault();ldz.classList.add('drag');});
+ldz.addEventListener('dragleave',()=>ldz.classList.remove('drag'));
+ldz.addEventListener('drop',e=>{e.preventDefault();ldz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))loadLogo(f);});
+linp.addEventListener('change',()=>{if(linp.files[0])loadLogo(linp.files[0]);linp.value='';});
+function loadLogo(f){const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{logo=img;regen();};img.src=ev.target.result;I('limg').src=ev.target.result;I('limg').style.display='block';I('lph').style.display='none';I('lchg').style.display='block';};r.readAsDataURL(f);}
+
+const idz=I('idz'),iinp=I('iinp');
+idz.addEventListener('click',()=>iinp.click());
+idz.addEventListener('dragover',e=>{e.preventDefault();idz.classList.add('drag');});
+idz.addEventListener('dragleave',()=>idz.classList.remove('drag'));
+idz.addEventListener('drop',e=>{e.preventDefault();idz.classList.remove('drag');addFiles(Array.from(e.dataTransfer.files));});
+iinp.addEventListener('change',()=>{addFiles(Array.from(iinp.files));iinp.value='';});
+
+function addFiles(files){
+  files.filter(f=>f.type.startsWith('image/')).forEach(f=>items.push({file:f,trim:true,scale:100,nudgeX:0,nudgeY:0}));
+  if(openIdx===-1&&items.length>0)openIdx=0;
+  renderList();regen();updateDl();
+}
+function clearAll(){items=[];openIdx=-1;stopPlay();renderList();regen();updateDl();}
+function removeItem(i){
+  items.splice(i,1);
+  if(items.length===0){openIdx=-1;}
+  else{if(openIdx===i)openIdx=Math.min(i,items.length-1);else if(openIdx>i)openIdx--;}
+  renderList();regen();updateDl();
+}
+function moveItem(i,dir){
+  if(dir===-1&&i>0){[items[i-1],items[i]]=[items[i],items[i-1]];if(openIdx===i)openIdx--;else if(openIdx===i-1)openIdx++;}
+  else if(dir===1&&i<items.length-1){[items[i+1],items[i]]=[items[i],items[i+1]];if(openIdx===i)openIdx++;else if(openIdx===i+1)openIdx--;}
+  renderList();regen();
+}
+function toggleOpen(i){openIdx=(openIdx===i)?-1:i;renderList();regen();}
+function updItem(i,k,v){items[i][k]=v;regen();}
+
+function renderList(){
+  const fs=I('fscroll');
+  I('icnt').textContent=items.length?`(${items.length})`:'';
+  I('clrbtn').style.display=items.length?'flex':'none';
+  I('ihint').style.display=items.length?'none':'block';
+  fs.innerHTML='';
+  items.forEach((item,i)=>{
+    const isOpen=i===openIdx,mc=isOpen?'ia w':'ia';
+    let moves=mode!=='batch'
+      ?`<button class="${mc}" onclick="event.stopPropagation();moveItem(${i},-1)" ${i===0?'disabled':''}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <button class="${mc}" onclick="event.stopPropagation();moveItem(${i},1)" ${i===items.length-1?'disabled':''}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>`:'';
+    const row=document.createElement('div');
+    row.className='fr'+(isOpen?' on':'');
+    row.innerHTML=(mode==='gif'?`<span class="fno">#${i+1}</span>`:'')
+      +`<span class="fn">${item.file.name}</span>`
+      +`<div class="fa">${moves}`
+      +`<button class="${mc}" onclick="event.stopPropagation();toggleOpen(${i})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="${isOpen?'18 15 12 9 6 15':'6 9 12 15 18 9'}"/></svg></button>`
+      +`<button class="${mc} del" onclick="event.stopPropagation();removeItem(${i})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
+    row.onclick=()=>toggleOpen(i);
+    fs.appendChild(row);
+    if(isOpen){
+      const pp=document.createElement('div');pp.className='pp';
+      pp.innerHTML=`<div class="pp-cb"><input type="checkbox" ${item.trim?'checked':''} onchange="updItem(${i},'trim',this.checked)"><span>裁切透明邊緣（去背 PNG 建議開啟）</span></div>`
+        +`<div class="pp-sep"></div>`
+        +`<div class="pp-grid">`
+          +`<div class="sr" style="grid-column:1/-1"><div class="sl">整體縮放<b id="psc${i}">${item.scale}%</b></div><input type="range" min="20" max="100" step="1" value="${item.scale}" oninput="updItem(${i},'scale',+this.value);I('psc${i}').textContent=this.value+'%'"></div>`
+          +`<div class="sr"><div class="sl">左右偏移<b id="pnx${i}">${item.nudgeX>0?'+':''}${item.nudgeX}%</b></div><input type="range" min="-30" max="30" step="1" value="${item.nudgeX}" oninput="updItem(${i},'nudgeX',+this.value);I('pnx${i}').textContent=(this.value>0?'+':'')+this.value+'%'"></div>`
+          +`<div class="sr"><div class="sl">上下偏移<b id="pny${i}">${item.nudgeY>0?'+':''}${item.nudgeY}%</b></div><input type="range" min="-30" max="30" step="1" value="${item.nudgeY}" oninput="updItem(${i},'nudgeY',+this.value);I('pny${i}').textContent=(this.value>0?'+':'')+this.value+'%'"></div>`
+        +`</div>`;
+      pp.onclick=e=>e.stopPropagation();
+      fs.appendChild(pp);
+    }
+  });
+  const showNav=(mode==='batch'||mode==='gif')&&items.length>1;
+  I('navbtns').style.display=showNav?'flex':'none';
+  I('plbtn').style.display=mode==='gif'&&items.length>1?'flex':'none';
+  const cur=openIdx>=0?openIdx:0;
+  const pc=I('pcnt');
+  if(showNav){pc.textContent=`${cur+1} / ${items.length}`;pc.style.display='inline-flex';}else pc.style.display='none';
+  if(I('pbtn'))I('pbtn').disabled=cur<=0||playing;
+  if(I('nbtn'))I('nbtn').disabled=cur>=items.length-1||playing;
+}
+
+function nav(d){openIdx=Math.max(0,Math.min(items.length-1,(openIdx<0?0:openIdx)+d));renderList();regen();}
+function togglePlay(){playing=!playing;if(playing)playTimer=setInterval(()=>{openIdx=(openIdx<0?0:(openIdx+1))%items.length;renderList();regen();},S.gifInterval*1000);else stopPlay();I('plicon').innerHTML=playing?'<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>':'<path d="M5 3l14 9-14 9V3z"/>';I('pllbl').textContent=playing?'暫停':'播放';}
+function stopPlay(){playing=false;clearInterval(playTimer);const pi=I('plicon');if(pi)pi.innerHTML='<path d="M5 3l14 9-14 9V3z"/>';const pl=I('pllbl');if(pl)pl.textContent='播放';}
+
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+function rmW(img){const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0);const d=ctx.getImageData(0,0,c.width,c.height),px=d.data;for(let i=0;i<px.length;i+=4)if(px[i]>240&&px[i+1]>240&&px[i+2]>240)px[i+3]=0;ctx.putImageData(d,0,0);return c;}
+function trimA(src){const c=document.createElement('canvas');c.width=src.width||src.naturalWidth;c.height=src.height||src.naturalHeight;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(src,0,0);const d=ctx.getImageData(0,0,c.width,c.height).data;let t=c.height,b=0,l=c.width,r=0;for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(d[(y*c.width+x)*4+3]>0){if(y<t)t=y;if(y>b)b=y;if(x<l)l=x;if(x>r)r=x;}if(t>b||l>r)return src;const tw=r-l+1,th=b-t+1;const tc=document.createElement('canvas');tc.width=tw;tc.height=th;tc.getContext('2d').drawImage(c,l,t,tw,th,0,0,tw,th);return tc;}
+function applyLogo(ctx,sz){if(!logo)return;const cl=rmW(logo),lw=sz*S.logoScale,lh=logo.height*(lw/logo.width),p=sz*S.logoPadding;ctx.globalAlpha=S.logoOpacity;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(cl,sz-lw-p,sz-lh-p,lw,lh);ctx.globalAlpha=1;}
+function calcSz(w,h){return Math.min(Math.max(w,h),S.maxSize);}
+
+async function drawOne(item,sz){
+  const u=URL.createObjectURL(item.file);let img=await loadImg(u);URL.revokeObjectURL(u);
+  const c=document.createElement('canvas');c.width=sz;c.height=sz;
+  const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,sz,sz);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  let src=img;if(item.trim)src=trimA(img);
+  const sw=src.width||src.naturalWidth,sh=src.height||src.naturalHeight;
+  const base=Math.min(sz/sw,sz/sh),us=(item.scale||100)/100;
+  const dw=sw*base*us,dh=sh*base*us,nx=sz*((item.nudgeX||0)/100),ny=sz*((item.nudgeY||0)/100);
+  ctx.drawImage(src,(sz-dw)/2+nx,(sz-dh)/2+ny,dw,dh);
+  applyLogo(ctx,sz);return c;
+}
+
+async function drawGrid(){
+  const sz=S.maxSize,c=document.createElement('canvas');c.width=sz;c.height=sz;
+  const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,sz,sz);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  const pad=S.gridPad,gw=sz-pad*2,gh=sz-pad*2,ox=pad,oy=pad,gx=S.gapX,gy=S.gapY;
+  const preset=PRESETS.find(p=>p.id===S.gridPreset);
+  const useP=preset&&preset.cells&&items.length<=preset.cells.length;
+  async function cell(itm,cx,cy,cw,ch){
+    const u=URL.createObjectURL(itm.file);let img=await loadImg(u);URL.revokeObjectURL(u);
+    if(itm.trim)img=trimA(img);
+    const sw=img.width||img.naturalWidth,sh=img.height||img.naturalHeight;
+    const base=Math.min(cw/sw,ch/sh),us=(itm.scale||100)/100;
+    const dw=sw*base*us,dh=sh*base*us,nx=cw*((itm.nudgeX||0)/100),ny=ch*((itm.nudgeY||0)/100);
+    ctx.save();ctx.beginPath();ctx.rect(cx,cy,cw,ch);ctx.clip();
+    ctx.drawImage(img,cx+(cw-dw)/2+nx,cy+(ch-dh)/2+ny,dw,dh);ctx.restore();
+  }
+  if(useP){
+    const uw=(gw-gx*(preset.cols-1))/preset.cols,uh=(gh-gy*(preset.rows-1))/preset.rows;
+    for(let i=0;i<items.length;i++){const[cs,rs,csp,rsp]=preset.cells[i];await cell(items[i],ox+cs*(uw+gx),oy+rs*(uh+gy),uw*csp+gx*(csp-1),uh*rsp+gy*(rsp-1));}
+  }else{
+    const n=items.length,cols=S.gridCols>0?S.gridCols:Math.ceil(Math.sqrt(n)),rows=Math.ceil(n/cols);
+    const cw=cols>1?(gw-gx*(cols-1))/cols:gw,ch=rows>1?(gh-gy*(rows-1))/rows:gh;
+    for(let i=0;i<items.length;i++){const r=Math.floor(i/cols),cc=i%cols;await cell(items[i],ox+cc*(cw+gx),oy+r*(ch+gy),cw,ch);}
+  }
+  applyLogo(ctx,sz);return c;
+}
+
+let regenT=null;
+function emptyHTML(){return`<div class="empty"><div class="illus"><div class="ic ib"></div><div class="ic im"></div><div class="ic if_"><svg viewBox="0 0 24 24" fill="none" stroke="#9b9890" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="ibadge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div></div><div style="font-size:15px;font-weight:500;color:var(--t2);">上傳圖片開始處理</div><div style="font-size:12px;color:var(--t3);">支援 JPG、PNG、GIF，拖曳即可上傳</div></div>`;}
+async function regen(){
+  if(items.length===0){I('pvb').innerHTML=emptyHTML();I('pvf').style.display='none';return;}
+  clearTimeout(regenT);
+  regenT=setTimeout(async()=>{
+    try{
+      let canvas;
+      if(mode==='grid'){canvas=await drawGrid();}
+      else{
+        const idx=openIdx>=0?openIdx:0,item=items[idx];
+        const u=URL.createObjectURL(item.file);const img=await loadImg(u);URL.revokeObjectURL(u);
+        canvas=await drawOne(item,calcSz(img.naturalWidth||img.width,img.naturalHeight||img.height));
+      }
+      const el=document.createElement('img');el.src=canvas.toDataURL('image/jpeg',.85);
+      el.style.cssText='max-height:500px;max-width:100%;object-fit:contain;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.15);';
+      I('pvb').innerHTML='';I('pvb').appendChild(el);
+      const cur=items[openIdx>=0?openIdx:0];
+      I('fname').textContent=cur.file.name.replace(/\.[^.]+$/,'')+(mode==='grid'?'_grid':'')+'.jpg';
+      I('pvf').style.display='flex';
+    }catch(e){console.error(e);}
+  },120);
+}
+
+function setP(v,txt){const p=I('prog');if(v<=0){p.style.display='none';return;}p.style.display='block';I('pfill').style.width=v+'%';if(txt)I('ptxt').textContent=txt;}
+function dlBlob(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);}
+function dlData(d,name){const a=document.createElement('a');a.href=d;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function updateDl(){const b=I('dlbtn'),l=I('dllbl');if(!items.length){b.disabled=true;l.textContent='請先上傳圖片';return;}b.disabled=false;if(mode==='batch')l.textContent=items.length>1?`逐一下載 (${items.length} 張)`:`下載 (1 張)`;else if(mode==='grid')l.textContent='下載網格拼貼圖';else l.textContent=`產生 GIF 動畫 (${items.length} 格)`;}
+function dlDelay(arr){return arr.reduce((chain,{blob,name},i)=>chain.then(()=>new Promise(r=>{setTimeout(()=>{dlBlob(blob,name);r();},i?300:0);})),Promise.resolve());}
+
+async function handleDl(){
+  if(!items.length)return;
+  const btn=I('dlbtn');btn.disabled=true;btn.classList.add('busy');setP(1,'準備中…');
+  try{
+    if(mode==='batch'){
+      const res=[];
+      for(let i=0;i<items.length;i++){
+        const item=items[i],u=URL.createObjectURL(item.file),img=await loadImg(u);URL.revokeObjectURL(u);
+        const c=await drawOne(item,calcSz(img.naturalWidth||img.width,img.naturalHeight||img.height));
+        const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',1));
+        res.push({blob,name:item.file.name.replace(/\.[^.]+$/,'')+'.jpg'});
+        setP(Math.round((i+1)/items.length*90),`處理 ${i+1}/${items.length}…`);
+      }
+      setP(95,'下載中…');await dlDelay(res);setP(100,'完成！');setTimeout(()=>setP(0),600);
+    }else if(mode==='gif'){
+      if(!window.gifshot){alert('GIF 引擎尚未載入，請確認網路連線後重新整理');return;}
+      let mx=0;for(const it of items){const u=URL.createObjectURL(it.file);const img=await loadImg(u);URL.revokeObjectURL(u);mx=Math.max(mx,img.naturalWidth||img.width,img.naturalHeight||img.height);}
+      const gs=Math.min(mx,S.maxSize),frames=[];
+      for(let i=0;i<items.length;i++){const c=await drawOne(items[i],gs);frames.push(c.toDataURL('image/jpeg',.9));setP(5+Math.round((i+1)/items.length*40),`影格 ${i+1}/${items.length}`);}
+      setP(45,'產生 GIF…');
+      gifshot.createGIF({images:frames,gifWidth:gs,gifHeight:gs,interval:S.gifInterval,sampleInterval:2,progressCallback:p=>setP(45+Math.round(p*55),'編碼中…')},obj=>{
+        if(!obj.error){dlData(obj.image,`animated_${Date.now()}.gif`);setP(100,'完成！');setTimeout(()=>setP(0),800);}
+        else{alert('GIF 產生失敗，請減少圖片數量再試');setP(0);}
+        btn.disabled=false;btn.classList.remove('busy');updateDl();
+      });return;
+    }else{
+      setP(20,'產生拼貼…');const c=await drawGrid();setP(85,'輸出中…');
+      const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',1));
+      dlBlob(blob,items[0].file.name.replace(/\.[^.]+$/,'')+'_grid.jpg');
+      setP(100,'完成！');setTimeout(()=>setP(0),500);
+    }
+  }catch(e){console.error(e);alert('處理失敗，請確認圖片格式');setP(0);}
+  btn.disabled=false;btn.classList.remove('busy');updateDl();
+}
+</script>
+</body>
+</html>
